@@ -1,0 +1,18 @@
+# Modelo de base de datos prouecto under_tango
+
+# Tabla usuarios
+
+CREATE TABLE users (
+  user_id INT PRIMARY KEY AUTO_INCREMENT,
+  first_name VARCHAR(50) NOT NULL,
+  last_name VARCHAR(50) NOT NULL,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  user_type TINYINT NOT NULL,
+  phone VARCHAR(20) DEFAULT NULL,
+  photo VARCHAR(255) DEFAULT NULL,
+  active BOOLEAN DEFAULT TRUE,
+  created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
