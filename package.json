@@ -5,12 +5,17 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node --watch back/src/index.js"
+    "dev": "node --watch src/index.js"
   },
   "author": "walter frias",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express-validator": "^7.2.1",
+    "mysql2": "^3.14.5",
+    "jsonwebtoken": "^9.0.2"
   }
 }
