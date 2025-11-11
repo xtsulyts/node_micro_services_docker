@@ -1,0 +1,11 @@
+{
+  "name": "gateway",
+  "version": "1.0.0",
+  "description": "gateway",
+  "main": "server.ts",
+  "scripts": {
+    "test": "npm run dev"
+  },
+  "author": "walter frias",
+  "license": "ISC"
+}
