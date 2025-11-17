@@ -1,18 +1,14 @@
-import express from 'express';
+import express from 'express'
 import cors from 'cors';
 import { config } from './config/env';
-import { userRoutes } from './routes/v1/authRoutes'
+import { authRoutes } from './routes/v1/authRoutes'
 
 const app = express();
 
-// Middlewares básicos
 app.use(cors());
 app.use(express.json());
 
-// Rutas
-app.use('/api/users', userRoutes);
-
-// Health check
+app.use('/api/auth', authRoutes);
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'OK', 

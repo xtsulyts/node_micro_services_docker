@@ -1,11 +1,11 @@
 import axios from 'axios';
 import { config } from '../config/env';
 
-export class UserService {
+export class AuthServices{
   private baseURL = config.USER_SERVICE_URL;
 
   async login(email: string, password: string) {
-    const response = await axios.post(`${this.baseURL}/auth/login`, {
+    const response = await axios.post(`${this.baseURL}/api/v1/auth/login`, {
       email,
       password
     });
@@ -13,9 +13,9 @@ export class UserService {
   }
 
   async register(userData: any) {
-    const response = await axios.post(`${this.baseURL}/auth/register`, userData);
+    const response = await axios.post(`${this.baseURL}/api/v1/auth/register`, userData);
     return response.data;
   }
 }
 
-export const userService = new UserService();
+export const authService = new AuthServices();

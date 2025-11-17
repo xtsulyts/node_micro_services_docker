@@ -1,31 +1,70 @@
 import { Router } from 'express';
-import { userService } from './../../services/authServices'
+import { authService } from '../../services/authServices';
 
 const router = Router();
 
-// POST /api/users/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const result = await userService.login(email, password);
+    console.log('📤 [GATEWAY] Enviando login a servicio auth:', { 
+      email: req.body.email,
+      password: '***' 
+    });
+    
+    const result = await authService.login(req.body.email, req.body.password);
+    
+    console.log('✅ [GATEWAY] Login exitoso:', { 
+      email: req.body.email,
+      response: result 
+    });
+    
     res.json(result);
   } catch (error: any) {
-    const status = error.response?.status || 500;
-    const message = error.response?.data?.error || 'Error en login';
-    res.status(status).json({ error: message });
+    console.log('❌ [GATEWAY] Error en login:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    
+    const statusCode = error.response?.status || 500;
+    const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error en login';
+    
+    res.status(statusCode).json({ 
+      error: errorMessage,
+      details: error.response?.data
+    });
   }
 });
 
-// POST /api/users/register
 router.post('/register', async (req, res) => {
   try {
-    const result = await userService.register(req.body);
-    res.status(201).json(result);
+    console.log('📤 [GATEWAY] Enviando registro a servicio auth:', { 
+      ...req.body,
+      password: '***' 
+    });
+    
+    const result = await authService.register(req.body);
+    
+    console.log('✅ [GATEWAY] Registro exitoso:', { 
+      email: req.body.email,
+      response: result 
+    });
+    
+    res.json(result);
   } catch (error: any) {
-    const status = error.response?.status || 500;
-    const message = error.response?.data?.error || 'Error en registro';
-    res.status(status).json({ error: message });
+    console.log('❌ [GATEWAY] Error en registro:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
+    
+    const statusCode = error.response?.status || 500;
+    const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Error en registro';
+    
+    res.status(statusCode).json({ 
+      error: errorMessage,
+      details: error.response?.data
+    });
   }
 });
 
-export const userRoutes = router;
+export const authRoutes = router;
