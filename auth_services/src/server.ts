@@ -4,9 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import path from 'path';
 
-// Cargar variables de entorno PRIMERO y en un solo lugar
 dotenv.config();
 
 import routes from '../src/routes/v1/index';
@@ -14,7 +12,6 @@ import { databaseConnection } from '../src/config/Conexion';
 
 /**
  * Servidor principal de la aplicación
- * Configura Express y todos los middlewares globales
  */
 class Server {
   private app: express.Application;
@@ -29,10 +26,6 @@ class Server {
     this.initializeErrorHandling();
   }
 
-  /**
-   * Obtiene el puerto de las variables de entorno con valor por defecto
-   * @returns Puerto configurado
-   */
   private getPort(): number {
     const port = parseInt(process.env.PORT || '3000');
     if (isNaN(port) || port < 1 || port > 65535) {
@@ -42,14 +35,11 @@ class Server {
     return port;
   }
 
-  /**
-   * Configura todos los middlewares globales de Express
-   */
   private initializeMiddlewares(): void {
-    // Seguridad básica con Helmet
+  
     this.app.use(helmet());
     
-    // CORS configurado para desarrollo (ajustar para producción)
+    // CORS configurado para desarrollo
     this.app.use(cors({
       origin: process.env.CLIENT_URL || 'http://localhost:5173',
       credentials: true,
@@ -65,7 +55,6 @@ class Server {
       this.app.use(morgan('combined'));
     }
 
-    // Parseo de JSON y límite de tamaño
     this.app.use(express.json({ 
       limit: process.env.JSON_LIMIT || '10mb' 
     }));
@@ -84,14 +73,10 @@ class Server {
     });
   }
 
-  /**
-   * Configura todas las rutas de la aplicación
-   */
+
   private initializeRoutes(): void {
-    // Montar todas las rutas definidas en routes/index.ts
     this.app.use('/', routes);
 
-    // Ruta de bienvenida en la raíz
     this.app.get('/', (req, res) => {
       res.status(200).json({
         success: true,
@@ -108,7 +93,6 @@ class Server {
    * Configura el manejo global de errores
    */
   private initializeErrorHandling(): void {
-    // Manejo de errores 404 (debe ir después de todas las rutas)
     this.app.use('*', (req, res) => {
       res.status(404).json({
         success: false,
@@ -118,11 +102,9 @@ class Server {
       });
     });
 
-    // Manejo global de errores
     this.app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
       console.error('🚨 Global error handler:', error);
 
-      // No exponer detalles internos en producción
       const isDevelopment = process.env.NODE_ENV === 'development';
       
       res.status(error.status || 500).json({
@@ -155,7 +137,6 @@ class Server {
    */
   public async start(): Promise<void> {
     try {
-      // Verificar base de datos antes de iniciar
       await this.initializeDatabase();
 
       this.app.listen(this.port, '0.0.0.0', () => {
@@ -193,9 +174,6 @@ class Server {
     console.log('');
   }
 
-  /**
-   * Cierra todas las conexiones de forma segura
-   */
   public async close(): Promise<void> {
     try {
       await databaseConnection.close();

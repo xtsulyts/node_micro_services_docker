@@ -11,7 +11,7 @@ interface DatabaseConfig {
   host: string;
   user: string;
   database: string;
-  //password: string;
+  password: string;
   waitForConnections?: boolean;
   connectionLimit?: number;
   queueLimit?: number;
@@ -25,9 +25,8 @@ class DatabaseConnection {
   private pool: mysql.Pool;
   private config: DatabaseConfig;
 
-  constructor() {
-    // Validar variables de entorno esenciales primero
-    const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_NAME'];
+  constructor() { 
+    const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_NAME', "DB_PASSWORD"];
     const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
     
     if (missingVars.length > 0) {
@@ -38,7 +37,7 @@ class DatabaseConnection {
       host: process.env.DB_HOST!,
       user: process.env.DB_USER!,
       database: process.env.DB_NAME!,
-      //password: process.env.DB_PASSWORD!,
+      password: process.env.DB_PASSWORD!,
       waitForConnections: true,
       connectionLimit: parseInt(process.env.DB_POOL_LIMIT || '20'), 
       queueLimit: 0,
