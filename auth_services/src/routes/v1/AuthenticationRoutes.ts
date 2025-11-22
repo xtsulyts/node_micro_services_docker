@@ -93,4 +93,34 @@ router.get('/health', (req, res) => {
   });
 });
 
+/**
+ * @route POST /api/v1/auth/request-password-reset
+ * @description Solicita restablecimiento de contraseña (envía email con token)
+ * @access Public
+ * @body {email}
+ */
+router.post('/request-password-reset', (req, res) => {
+  authController.requestPasswordReset(req, res);
+});
+
+/**
+ * @route POST /api/v1/auth/validate-reset-token  
+ * @description Valida si un token de restablecimiento es válido
+ * @access Public
+ * @body {token}
+ */
+router.post('/validate-reset-token', (req, res) => {
+  authController.validateResetToken(req, res);
+});
+
+/**
+ * @route POST /api/v1/auth/reset-password
+ * @description Restablece la contraseña usando un token válido
+ * @access Public
+ * @body {token, newPassword}
+ */
+router.post('/reset-password', (req, res) => {
+  authController.resetPassword(req, res);
+});
+
 export default router;

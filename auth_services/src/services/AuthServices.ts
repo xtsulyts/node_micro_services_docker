@@ -1,6 +1,7 @@
 import { UserService } from './UserServices';
 import { JwtService } from './JwtServices';
 import { CryptoService } from './CryptoServices';
+import { enviarEmailRecuperacion } from './EmailServives';
 
 // Interfaces para datos de autenticación
 interface RegisterData {
@@ -39,6 +40,23 @@ interface AuthResponse {
 interface TokenRefreshResponse {
   token: string;
   expiresIn: number;
+}
+
+interface PasswordResetResponse {
+  success: boolean;
+  email: string;
+  resetToken?: string;
+}
+
+interface TokenValidationResponse {
+  isValid: boolean;
+  email?: string;
+  userId?: number;
+}
+
+interface PasswordResetData {
+  token: string;
+  newPassword: string;
 }
 
 // Interface para errores de autenticación
@@ -250,4 +268,110 @@ export class AuthService {
   getPasswordPolicy() {
     return this.cryptoService.getPasswordPolicy();
   }
+
+  async validateResetToken(token: string): Promise<TokenValidationResponse> {
+  try {
+    // Validar token en base de datos
+    const tokenData = await this.userService.validateResetToken({ token });
+    
+    if (!tokenData || !tokenData.isValid) {
+      return { isValid: false };
+    }
+
+    return {
+      isValid: true,
+      email: tokenData.email,
+      userId: tokenData.userId
+    };
+
+  } catch (error) {
+    console.error('Error en AuthService.validateResetToken:', error);
+    return { isValid: false };
+  }
+  }
+
+  async updatePassword(token: string, newPassword: string): Promise<void> {
+  try {
+    // Validar token primero
+    const tokenValidation = await this.validateResetToken(token);
+    if (!tokenValidation.isValid || !tokenValidation.userId) {
+      throw new AuthError('INVALID_OR_EXPIRED_TOKEN');
+    }
+
+    // Validar fortaleza de nueva contraseña
+    if (!this.cryptoService.isPasswordStrong(newPassword)) {
+      throw new AuthError('WEAK_PASSWORD');
+    }
+
+    // Actualizar contraseña del usuario
+    await this.userService.updatePassword({ 
+  userId: tokenValidation.userId, 
+  newPassword: newPassword 
+  });
+    
+    // Invalidar token después de uso
+    await this.userService.invalidateResetToken( {token});
+
+  } catch (error) {
+    console.error('Error en AuthService.updatePassword:', error);
+    
+    if (error instanceof AuthError) {
+      throw error;
+    }
+    
+    throw new AuthError('PASSWORD_UPDATE_FAILED');
+  }
+  }
+
+async generateResetToken(email: string): Promise<string> {
+  console.log('🔍 generateResetToken - Paso 1: Limpiando tokens expirados');
+  await this.userService.cleanupExpiredTokens();
+
+  console.log('🔍 generateResetToken - Paso 2: Buscando usuario por email');
+  const user = await this.userService.findByEmail(email);
+  if (!user) {
+    console.log('🔍 generateResetToken - ❌ Usuario no encontrado');
+    throw new AuthError('USER_NOT_FOUND');
+  }
+
+  console.log('🔍 generateResetToken - Paso 3: Generando token aleatorio');
+  const resetToken = this.cryptoService.generateRandomToken();
+  console.log('🔍 generateResetToken - Token generado:', resetToken);
+
+  console.log('🔍 generateResetToken - Paso 4: Guardando token en BD');
+  await this.userService.saveResetToken(user.user_id, resetToken);
+  
+  console.log('🔍 generateResetToken - Paso 5: Retornando token');
+  return resetToken;
+}
+
+async requestPasswordReset(email: string): Promise<PasswordResetResponse> {
+  console.log('🔍 Paso 1: Iniciando requestPasswordReset para:', email);
+  
+  try {
+    console.log('🔍 Paso 2: Llamando generateResetToken...');
+    const resetToken = await this.generateResetToken(email);
+    console.log('🔍 Paso 3: Token generado:', resetToken);
+
+    console.log('🔍 Paso 4: Llamando enviarEmailRecuperacion...');
+    await enviarEmailRecuperacion(email, resetToken);
+    console.log('🔍 Paso 5: Email enviado exitosamente');
+
+    console.log('🔍 Paso 6: Retornando respuesta exitosa');
+    return {
+      success: true,
+      email: email,
+      resetToken: resetToken
+    };
+
+  } catch (error) {
+    console.log('🔍 ❌ Error en requestPasswordReset:', error);
+    
+    console.log('🔍 Paso 7: Retornando respuesta de fallback');
+    return {
+      success: true,
+      email: email
+    };
+  }
+}
 }

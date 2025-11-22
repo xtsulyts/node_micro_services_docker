@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AuthService } from '../services/AuthServices';
+import { enviarEmailRecuperacion } from '../services/EmailServives';
 
 // Interfaces para requests tipados
 interface RegisterRequest extends Request {
@@ -19,6 +20,12 @@ interface LoginRequest extends Request {
   body: {
     email: string;
     password: string;
+  };
+}
+
+interface RecoverPassword {
+  body: {
+    email: string;
   };
 }
 
@@ -48,11 +55,37 @@ interface ControllerError {
   code?: string;
 }
 
+interface RequestPasswordResetRequest extends Request {
+  body: {
+    email: string;
+  };
+}
+
+interface ValidateResetTokenRequest extends Request {
+  body: {
+    token: string;
+  };
+}
+
+interface ResetPasswordRequest extends Request {
+  body: {
+    token: string;
+    newPassword: string;
+    confirmPassword?: string; // Opcional para validación en frontend
+  };
+}
+
+interface PasswordResetResponse {
+  success: boolean;
+  email: string;
+  resetToken?: string;
+}
+
 /**
  * Controlador para manejar todas las operaciones HTTP de autenticación
  * Se encarga de recibir requests, validar datos básicos y enviar responses
  */
-export class AuthController {
+export class AuthController { 
   private authService: AuthService;
 
   constructor(authService: AuthService) {
@@ -284,4 +317,79 @@ export class AuthController {
 
     res.status(statusCode).json(response);
   }
+
+async requestPasswordReset(email: string): Promise<PasswordResetResponse> {
+  try {
+    const resetToken = await this.generateResetToken(email);
+    
+    // Add this line - import the email service first
+    await enviarEmailRecuperacion(email, resetToken);
+    
+    return {
+      success: true,
+      email: email,
+      resetToken: resetToken // For testing
+    };
+
+  } catch (error) {
+    // For security, always return success even if email doesn't exist
+    return {
+      success: true,
+      email: email
+    };
+  }
+}
+
+  async validateResetToken(req: ValidateResetTokenRequest, res: Response): Promise<void> {
+  try {
+    if (!req.body.token) {
+      this.sendErrorResponse(res, 400, 'TOKEN_REQUIRED');
+      return;
+    }
+
+    const isValid = await this.authService.validateResetToken(req.body.token);
+    
+    this.sendSuccessResponse(res, 200, {
+      message: 'TOKEN_IS_VALID',
+      data: { valid: isValid }
+    });
+
+  } catch (error) {
+    const err = error as ControllerError;
+    
+    if (err.message.includes('INVALID_TOKEN') || err.message.includes('EXPIRED_TOKEN')) {
+      this.sendErrorResponse(res, 400, 'INVALID_OR_EXPIRED_TOKEN');
+    } else {
+      this.sendErrorResponse(res, 500, 'TOKEN_VALIDATION_FAILED');
+    }
+  }
+  }
+
+  async resetPassword(req: ResetPasswordRequest, res: Response): Promise<void> {
+  try {
+    if (!req.body.token || !req.body.newPassword) {
+      this.sendErrorResponse(res, 400, 'TOKEN_AND_PASSWORD_REQUIRED');
+      return;
+    }
+
+    await this.authService.resetPassword(req.body.token, req.body.newPassword);
+    
+    this.sendSuccessResponse(res, 200, {
+      message: 'PASSWORD_UPDATED_SUCCESSFULLY'
+    });
+
+  } catch (error) {
+    const err = error as ControllerError;
+    
+    if (err.message.includes('INVALID_TOKEN') || err.message.includes('EXPIRED_TOKEN')) {
+      this.sendErrorResponse(res, 400, 'INVALID_OR_EXPIRED_TOKEN');
+    } else if (err.message.includes('WEAK_PASSWORD')) {
+      this.sendErrorResponse(res, 400, 'WEAK_PASSWORD');
+    } else {
+      this.sendErrorResponse(res, 500, 'PASSWORD_RESET_FAILED');
+    }
+  }
+  }
+
+
 }

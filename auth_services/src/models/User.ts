@@ -36,6 +36,25 @@ interface MySqlError {
   sqlMessage?: string;
 }
 
+interface SaveResetTokenParams {
+  userId: number;
+  token: string;
+  expiresAt: Date;
+}
+
+interface ResetTokenWithEmail {
+  userId: number;
+  token: string;
+  expiresAt: Date;
+  used: boolean;
+  email: string;
+}
+
+interface PasswordUpdateParams {
+  userId: number;
+  hashedPassword: string;
+}
+
 export class UserModel {
   /**
    * Crea un nuevo usuario en la base de datos
@@ -167,4 +186,100 @@ export class UserModel {
       throw new Error('DATABASE_ERROR');
     }
   }
+
+  async saveResetToken(params: SaveResetTokenParams): Promise<void> {
+  try {
+    const query = `
+      INSERT INTO password_reset_tokens (user_id, token, expires_at) 
+      VALUES (?, ?, ?)
+    `;
+    
+    await databaseConnection.execute<ResultSetHeader>(query, [
+      params.userId, 
+      params.token, 
+      params.expiresAt
+    ]);
+    
+  } catch (error) {
+    const mysqlError = error as MySqlError;
+    console.error('Error en UserModel.saveResetToken:', mysqlError.message);
+    throw new Error('FAILED_TO_SAVE_RESET_TOKEN');
+  }
+  }
+
+  async findResetToken(token: string): Promise<ResetTokenWithEmail | null>  {
+  try {
+    const query = `
+      SELECT prt.*, u.email 
+      FROM password_reset_tokens prt
+      JOIN users u ON prt.user_id = u.user_id
+      WHERE prt.token = ? AND prt.used = FALSE AND u.active = TRUE
+    `;
+    
+    const tokens = await databaseConnection.execute<RowDataPacket[]>(query, [token]);
+    
+    if (!tokens || tokens.length === 0) {
+      return null;
+    }
+    
+    const tokenData = tokens[0];
+    return {
+      userId: tokenData.user_id,
+      token: tokenData.token,
+      expiresAt: new Date(tokenData.expires_at),
+      used: tokenData.used === 1,
+      email: tokenData.email
+    };
+    
+  } catch (error) {
+    const mysqlError = error as MySqlError;
+    console.error('Error en UserModel.findResetToken:', mysqlError.message);
+    throw new Error('DATABASE_ERROR');
+  }
+  }
+
+
+  async markTokenAsUsed(token: string): Promise<void> {
+  try {
+    const query = `
+      UPDATE password_reset_tokens 
+      SET used = TRUE 
+      WHERE token = ?
+    `;
+    
+    await databaseConnection.execute<ResultSetHeader>(query, [token]);
+    
+  } catch (error) {
+    const mysqlError = error as MySqlError;
+    console.error('Error en UserModel.markTokenAsUsed:', mysqlError.message);
+    throw new Error('FAILED_TO_INVALIDATE_TOKEN');
+  }
+  }
+
+  async updatePassword(params: PasswordUpdateParams): Promise<void> {
+    try {
+      const query = `
+        UPDATE users 
+        SET password = ?, modified = CURRENT_TIMESTAMP 
+        WHERE user_id = ?
+      `;
+      
+      await databaseConnection.execute<ResultSetHeader>(query, [params.hashedPassword, params.userId]);
+      
+    } catch (error) {
+      const mysqlError = error as MySqlError;
+      console.error('Error en UserModel.updatePassword:', mysqlError.message);
+      throw new Error('PASSWORD_UPDATE_FAILED');
+    }
+    }
+
+  async cleanupExpiredTokens(): Promise<void> {
+  try {
+    const query = `DELETE FROM password_reset_tokens WHERE expires_at < NOW() OR used = TRUE`;
+    await databaseConnection.execute<ResultSetHeader>(query);
+  } catch (error) {
+    const mysqlError = error as MySqlError;
+    console.error('Error en UserModel.cleanupExpiredTokens:', mysqlError.message);
+  }
+}
 }

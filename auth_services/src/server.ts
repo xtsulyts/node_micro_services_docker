@@ -171,8 +171,11 @@ class Server {
     console.log('   POST /api/v1/auth/refresh-token - Token refresh');
     console.log('   POST /api/v1/auth/verify-token  - Token verification');
     console.log('   GET  /api/v1/auth/password-policy - Password policy');
+    console.log('   POST /api/v1/auth/request-password-reset - Request password reset');
+    console.log('   POST /api/v1/auth/validate-reset-token   - Validate reset token');
+    console.log('   POST /api/v1/auth/reset-password         - Reset password with token');
     console.log('');
-  }
+    }
 
   public async close(): Promise<void> {
     try {

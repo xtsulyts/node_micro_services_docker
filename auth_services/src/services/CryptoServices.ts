@@ -202,4 +202,12 @@ export class CryptoService {
       description: 'Mínimo 8 caracteres con mayúsculas, minúsculas, números y símbolos'
     };
   }
+
+  generateRandomToken(): string {
+  return this.generateSecureToken(32); // Reutiliza el método existente
+  }
+
+  isPasswordStrong(password: string): boolean {
+    return this.validatePasswordStrength(password); // Reutiliza el método existente
+  }
 }

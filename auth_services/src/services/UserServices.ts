@@ -35,6 +35,37 @@ class BusinessError extends Error {
   }
 }
 
+interface ResetTokenData {
+  userId: number;
+  token: string;
+  expiresAt: Date;
+  used: boolean;
+}
+
+interface TokenValidationResult {
+  isValid: boolean;
+  userId?: number;
+  email?: string;
+}
+
+interface PasswordUpdateResult {
+  success: boolean;
+  userId: number;
+}
+
+interface TokenValidationParams {
+  token: string;
+}
+
+interface UserPasswordUpdateParams {
+  userId: number;
+  newPassword: string;
+}
+
+interface TokenInvalidationParams {
+  token: string;
+}
+
 export class UserService {
   private userModel: UserModel;
   private cryptoService: CryptoService;
@@ -175,4 +206,84 @@ export class UserService {
       created: user.created
     };
   }
+
+  async findByEmail(email: string): Promise<UserResponse | null> {
+  try {
+    const user = await this.userModel.findByEmail(email);
+    return user ? this.transformUserResponse(user) : null;
+  } catch (error) {
+    console.error('Error en UserService.findByEmail:', error);
+    throw new BusinessError('ERROR_FINDING_USER_BY_EMAIL');
+  }
+  }
+
+  async saveResetToken(userId: number, token: string): Promise<void> {
+  try {
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+    await this.userModel.saveResetToken({ userId, token, expiresAt });
+  } catch (error) {
+    console.error('Error en UserService.saveResetToken:', error);
+    throw new BusinessError('FAILED_TO_SAVE_RESET_TOKEN');
+  }
+  }
+
+  async cleanupExpiredTokens(): Promise<void> {
+  try {
+    await this.userModel.cleanupExpiredTokens();
+  } catch (error) {
+    console.error('Error en UserService.cleanupExpiredTokens:', error);
+    // No throw, es una operación de mantenimiento
+  }
+  }
+
+  async validateResetToken(params: TokenValidationParams): Promise<TokenValidationResult> {
+    try {
+      const tokenData = await this.userModel.findResetToken(params.token);
+      
+      if (!tokenData) {
+        return { isValid: false };
+      }
+
+      return {
+        isValid: true,
+        userId: tokenData.userId,
+        email: tokenData.email
+      };
+
+    } catch (error) {
+      console.error('Error en UserService.validateResetToken:', error);
+      return { isValid: false };
+    }
+  }
+
+  async updatePassword(params: UserPasswordUpdateParams): Promise<PasswordUpdateResult> {
+  try {
+    // Hashear la nueva contraseña
+    const hashedPassword = await this.cryptoService.hashPassword(params.newPassword);
+    
+    // Actualizar en la base de datos
+    await this.userModel.updatePassword({
+      userId: params.userId,
+      hashedPassword: hashedPassword
+    });
+    
+    return {
+      success: true,
+      userId: params.userId
+    };
+
+  } catch (error) {
+    console.error('Error en UserService.updatePassword:', error);
+    throw new BusinessError('PASSWORD_UPDATE_FAILED');
+  }
+  }
+
+  async invalidateResetToken(params: TokenInvalidationParams): Promise<void> {
+  try {
+    await this.userModel.markTokenAsUsed(params.token);
+  } catch (error) {
+    console.error('Error en UserService.invalidateResetToken:', error);
+    throw new BusinessError('FAILED_TO_INVALIDATE_TOKEN');
+  }
+}
 }
