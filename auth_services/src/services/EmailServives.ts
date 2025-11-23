@@ -1,33 +1,67 @@
 import nodemailer from 'nodemailer';
-import { SentMessageInfo } from 'nodemailer';
+//import { SentMessageInfo } from 'nodemailer';
 
-// Validar que las variables de entorno estén definidas
-const getEmailConfig = () => {
+const validateEmailConfig = (): { user: string; pass: string} => {
   const user = process.env.EMAIL_USER;
   const pass = process.env.EMAIL_PASS;
-  
   if (!user || !pass) {
-    throw new Error('EMAIL_USER o EMAIL_PASS no están definidos en las variables de entorno');
+    throw new Error("email o user no estan definidos.");
   }
-  
-  return { user, pass };
+  return { user, pass};
+}
+
+const createTransporter = () => {
+  const config = validateEmailConfig();
+
+  return nodemailer.createTransport({
+        service: "gmail",
+    auth: {
+      user: config.user,
+      pass: config.pass,
+    },
+    secure: true,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  });
+
 };
 
-// Configuración del transporter
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: getEmailConfig()
-});
+const transporter = createTransporter();
 
-export const enviarEmailRecuperacion = async (email: string, token: string): Promise<boolean> => {
-  console.log('📧 Simulando envío de email a:', email);
-  console.log('📧 Token:', token);
-  const enlace = `http://localhost:5173/restablecer-contrasenia?token=${token}`; // url front under tango
-  
+transporter.verify((error) => {
+  if(error) {
+    console.error("error configurando el transporter de email", error);
+  } else {
+    console.log("trasporter email configurado correctamente.");
+  }
+}
+);
+
+interface EmailOptions {
+  email: string;
+  token: string;
+  frontendUrl?: string;
+}
+
+export const enviarEmailRecuperacion = async (options: EmailOptions): Promise<boolean> => {
+  const { email, token, frontendUrl = "http://localhost:5173" } = options;
+
+  console.log("inicion de sesion de:", email)
+
+  const enlace = `${frontendUrl}/restablecer-contrasenia?token=>${encodeURIComponent(token)}`
+ 
   const mailOptions = {
-    from: process.env.EMAIL_USER,
+    // from: process.env.EMAIL_USER,
+    // to: email,
+    // subject: 'Restablecer tu contraseña - Programación III',
+
+    from: {
+      name: "Under Tango",
+      address: process.env.EMAIL_USER!
+    },
     to: email,
-    subject: 'Restablecer tu contraseña - Programación III',
+    subjet: "Restablecer tu contraseña- Under Tango App",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
     <h2 style="color: #333;">Restablecer Contraseña</h2>

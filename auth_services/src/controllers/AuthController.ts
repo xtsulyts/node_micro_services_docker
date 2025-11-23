@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { AuthService } from '../services/AuthServices';
 import { enviarEmailRecuperacion } from '../services/EmailServives';
 
-// Interfaces para requests tipados
 interface RegisterRequest extends Request {
   body: {
     first_name: string;
@@ -41,7 +40,6 @@ interface VerifyTokenRequest extends Request {
   };
 }
 
-// Interface para respuestas estandarizadas
 interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
@@ -49,7 +47,6 @@ interface ApiResponse<T = any> {
   message?: string;
 }
 
-// Interface para errores del controller
 interface ControllerError {
   message: string;
   code?: string;
@@ -71,7 +68,7 @@ interface ResetPasswordRequest extends Request {
   body: {
     token: string;
     newPassword: string;
-    confirmPassword?: string; // Opcional para validación en frontend
+    confirmPassword?: string;
   };
 }
 
@@ -92,23 +89,15 @@ export class AuthController {
     this.authService = authService;
   }
 
-  /**
-   * Maneja el registro de nuevos usuarios
-   * @param req - Request HTTP con datos de registro
-   * @param res - Response HTTP
-   */
   async register(req: RegisterRequest, res: Response): Promise<void> {
     try {
-      // Validación básica de datos requeridos
       if (!this.validateRegisterData(req.body)) {
         this.sendErrorResponse(res, 400, 'MISSING_REQUIRED_FIELDS');
         return;
       }
 
-      // Procesar registro a través del AuthService
       const authResponse = await this.authService.register(req.body);
 
-      // Enviar respuesta exitosa
       this.sendSuccessResponse(res, 201, {
         message: 'USER_REGISTERED_SUCCESSFULLY',
         data: authResponse
@@ -135,23 +124,17 @@ export class AuthController {
     }
   }
 
-  /**
-   * Maneja el login de usuarios existentes
-   * @param req - Request HTTP con credenciales
-   * @param res - Response HTTP
-   */
+
   async login(req: LoginRequest, res: Response): Promise<void> {
     try {
-      // Validación básica de credenciales
       if (!req.body.email || !req.body.password) {
         this.sendErrorResponse(res, 400, 'EMAIL_AND_PASSWORD_REQUIRED');
         return;
       }
 
-      // Procesar login a través del AuthService
       const authResponse = await this.authService.login(req.body);
 
-      // Enviar respuesta exitosa
+   
       this.sendSuccessResponse(res, 200, {
         message: 'LOGIN_SUCCESSFUL',
         data: authResponse
@@ -174,11 +157,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Maneja la renovación de tokens JWT
-   * @param req - Request HTTP con token actual
-   * @param res - Response HTTP
-   */
+
   async refreshToken(req: RefreshTokenRequest, res: Response): Promise<void> {
     try {
       if (!req.body.token) {
@@ -194,7 +173,6 @@ export class AuthController {
       });
 
     } catch (error) {
-      // Type assertion para el error
       const err = error as ControllerError;
       
       console.error('Error en AuthController.refreshToken:', err.message);
@@ -207,11 +185,6 @@ export class AuthController {
     }
   }
 
-  /**
-   * Maneja la verificación de tokens JWT
-   * @param req - Request HTTP con token a verificar
-   * @param res - Response HTTP
-   */
   async verifyToken(req: VerifyTokenRequest, res: Response): Promise<void> {
     try {
       if (!req.body.token) {
@@ -227,7 +200,6 @@ export class AuthController {
       });
 
     } catch (error) {
-      // Type assertion para el error
       const err = error as ControllerError;
       
       console.error('Error en AuthController.verifyToken:', err.message);
@@ -242,12 +214,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Endpoint para obtener la política de passwords
-   * Útil para que el frontend muestre requisitos al usuario
-   * @param req - Request HTTP
-   * @param res - Response HTTP
-   */
+
   async getPasswordPolicy(req: Request, res: Response): Promise<void> {
     try {
       const policy = this.authService.getPasswordPolicy();
@@ -258,7 +225,6 @@ export class AuthController {
       });
 
     } catch (error) {
-      // Type assertion para el error
       const err = error as ControllerError;
       
       console.error('Error en AuthController.getPasswordPolicy:', err.message);
@@ -266,11 +232,7 @@ export class AuthController {
     }
   }
 
-  /**
-   * Valida los datos básicos de registro
-   * @param data - Datos del request
-   * @returns true si los datos son válidos
-   */
+
   private validateRegisterData(data: any): boolean {
     const requiredFields = [
       'first_name', 
@@ -288,12 +250,7 @@ export class AuthController {
     );
   }
 
-  /**
-   * Envía una respuesta HTTP de éxito estandarizada
-   * @param res - Response object
-   * @param statusCode - Código HTTP de éxito
-   * @param data - Datos a incluir en la respuesta
-   */
+
   private sendSuccessResponse(res: Response, statusCode: number, data: any): void {
     const response: ApiResponse = {
       success: true,
@@ -303,12 +260,7 @@ export class AuthController {
     res.status(statusCode).json(response);
   }
 
-  /**
-   * Envía una respuesta HTTP de error estandarizada
-   * @param res - Response object
-   * @param statusCode - Código HTTP de error
-   * @param error - Mensaje de error
-   */
+
   private sendErrorResponse(res: Response, statusCode: number, error: string): void {
     const response: ApiResponse = {
       success: false,
@@ -318,25 +270,20 @@ export class AuthController {
     res.status(statusCode).json(response);
   }
 
-async requestPasswordReset(email: string): Promise<PasswordResetResponse> {
+async requestPasswordReset(req: RequestPasswordResetRequest, res: Response): Promise<void> {
   try {
-    const resetToken = await this.generateResetToken(email);
-    
-    // Add this line - import the email service first
-    await enviarEmailRecuperacion(email, resetToken);
-    
-    return {
-      success: true,
-      email: email,
-      resetToken: resetToken // For testing
-    };
+    const { email } = req.body;
 
+    const resetToken = await this.authService.generateResetToken(email);
+    await enviarEmailRecuperacion({ email, token: resetToken });
+
+    // Pasar un objeto como tercer parámetro, no un string
+    this.sendSuccessResponse(res, 200, {
+      message: "PASSWORD_RESET_EMAIL_SENT",
+      data: { email }
+    });
   } catch (error) {
-    // For security, always return success even if email doesn't exist
-    return {
-      success: true,
-      email: email
-    };
+    this.sendErrorResponse(res, 401, "ERROR");
   }
 }
 
@@ -372,7 +319,7 @@ async requestPasswordReset(email: string): Promise<PasswordResetResponse> {
       return;
     }
 
-    await this.authService.resetPassword(req.body.token, req.body.newPassword);
+    await this.authService.updatePassword (req.body.token, req.body.newPassword);
     
     this.sendSuccessResponse(res, 200, {
       message: 'PASSWORD_UPDATED_SUCCESSFULLY'
