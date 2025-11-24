@@ -16,6 +16,29 @@ export class AuthServices{
     const response = await axios.post(`${this.baseURL}/api/v1/auth/register`, userData);
     return response.data;
   }
+
+
+  async requestPasswordReset(email: string) {
+    const response = await axios.post(`${this.baseURL}/api/v1/auth/request-password-reset`, {
+      email
+    });
+    return response.data;
+  }
+
+  async validateResetToken(token: string) {
+    const response = await axios.post(`${this.baseURL}/api/v1/auth/validate-reset-token`, {
+      token
+    });
+    return response.data;
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const response = await axios.post(`${this.baseURL}/api/v1/auth/reset-password`, {
+      token,
+      newPassword
+    });
+    return response.data;
+  }
 }
 
 export const authService = new AuthServices();

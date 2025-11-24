@@ -7,7 +7,11 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-
+// En tu server principal, ANTES de app.use('/api/auth', authRoutes);
+app.use('/api/auth', (req, res, next) => {
+  console.log('🔍 [GATEWAY MAIN] Ruta auth recibida:', req.method, req.originalUrl, req.body);
+  next();
+});
 app.use('/api/auth', authRoutes);
 app.get('/health', (req, res) => {
   res.json({ 
