@@ -59,6 +59,13 @@ interface PasswordResetData {
   newPassword: string;
 }
 
+interface Email {
+  email: string;
+  token: string;
+  frontendUrl?: string;
+
+}
+
 // Interface para errores de autenticación
 class AuthError extends Error {
   constructor(message: string) {
@@ -354,7 +361,10 @@ async requestPasswordReset(email: string): Promise<PasswordResetResponse> {
     console.log('🔍 Paso 3: Token generado:', resetToken);
 
     console.log('🔍 Paso 4: Llamando enviarEmailRecuperacion...');
-    await enviarEmailRecuperacion(email, resetToken);
+    await enviarEmailRecuperacion({
+      email: email,           
+      token: resetToken       
+    });
     console.log('🔍 Paso 5: Email enviado exitosamente');
 
     console.log('🔍 Paso 6: Retornando respuesta exitosa');

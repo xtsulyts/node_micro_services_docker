@@ -1,0 +1,49 @@
+version: '3.8'
+services:
+  mysql_db:
+    image: mysql:8
+    container_name: auth_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: auth_service_db
+      MYSQL_USER: xtsulyts
+      MYSQL_PASSWORD: avmayo852
+    volumes:
+      - mysql_auth_data:/var/lib/mysql
+    ports:
+      - "3307:3306"  
+    healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+            timeout: 20s
+            retries: 10
+            start_period: 30s
+            interval: 5s
+
+  auth_service:
+    build: ./auth_services 
+    container_name: auth_service
+    environment:
+      env_file: .env
+      NODE_ENV: development
+      PORT: 3001
+      DB_HOST: mysql_db  
+      DB_NAME: auth_service_db
+      DB_USER: xtsulyts
+      DB_PASSWORD: avmayo852
+      JWT_SECRET: "tu_super_secreto_jwt_min_32_caracteres"
+      JWT_EXPIRES_IN: "7d"
+      BCRYPT_ROUNDS: "12"
+      # Servicio email
+      EMAIL_USER: "531xsulyts@gmail.com"
+      EMAIL_PASS: "wjaxhhpvuvftwdfd"
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mysql_db
+    # desarrollo usar `npm run dev`
+    # volumes:
+    #   - ./auth_services:/usr/src/app
+    # command: ["npm", "run", "dev"]
+
+volumes:
+  mysql_auth_data:
