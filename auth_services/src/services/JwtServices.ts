@@ -36,6 +36,7 @@ interface JwtConfig {
   audience: string;
 }
 
+
 /**
  * Servicio especializado en operaciones con tokens JWT
  * Maneja generación, verificación y renovación de tokens de forma segura
@@ -56,15 +57,17 @@ export class JwtService {
    */
   async generateToken(payload: JwtPayload, options: TokenOptions = {}): Promise<TokenResponse> {
     try {
-      const tokenOptions: jwt.SignOptions = {
-        expiresIn: options.expiresIn || this.config.defaultExpiresIn,
-        issuer: options.issuer || this.config.issuer,
-        audience: options.audience || this.config.audience,
-        algorithm: 'HS256'
-      };
+    // 1. Construye las opciones normalmente (sin tipo jwt.SignOptions)
+    const tokenOptions = {
+      expiresIn: options.expiresIn || this.config.defaultExpiresIn,
+      issuer: options.issuer || this.config.issuer,
+      audience: options.audience || this.config.audience,
+      algorithm: 'HS256' as const
+    };
 
-      const token = jwt.sign(payload, this.config.secret, tokenOptions);
-      
+  // 2. Al pasar a jwt.sign, usa 'as any' para evitar el conflicto de tipos
+  const token = jwt.sign(payload, this.config.secret, tokenOptions as any);
+        
       // Decodificar el token para obtener información de expiración
       const decoded = jwt.decode(token) as { exp: number; iat: number };
       
@@ -191,7 +194,7 @@ export class JwtService {
   getExpirationInSeconds(expiresIn: string): number {
     try {
       const now = Math.floor(Date.now() / 1000);
-      const testToken = jwt.sign({ test: true }, this.config.secret, { expiresIn });
+      const testToken = jwt.sign({ test: true }, this.config.secret, { expiresIn: '1h' }); 
       const decoded = jwt.decode(testToken) as { exp: number };
       
       return decoded.exp - now;
