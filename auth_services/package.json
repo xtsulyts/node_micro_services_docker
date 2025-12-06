@@ -1,5 +1,5 @@
 {
-  "name": "back_under_tango",
+  "name": "node_micro_services",
   "version": "1.0.0",
   "main": "server.ts",
   "type": "module",
