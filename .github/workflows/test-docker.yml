@@ -12,34 +12,65 @@ jobs:
 
       - name: 1. DEBUG - Mostrar estructura
         run: |
-          echo "=== ESTRUCTURA ==="
+          echo "=== ESTRUCTURA DEL REPOSITORIO ==="
           pwd
+          echo ""
+          echo "=== CONTENIDO RAIZ ==="
           ls -la
+          echo ""
           echo "=== auth_services/ ==="
-          ls -la auth_services/
+          if [ -d "auth_services" ]; then
+            ls -la auth_services/
+          else
+            echo "❌ ERROR: No existe directorio auth_services/"
+          fi
+          echo ""
+          echo "=== gateway/ ==="
+          if [ -d "gateway" ]; then
+            ls -la gateway/
+          else
+            echo "❌ ERROR: No existe directorio gateway/"
+          fi
+          echo ""
           echo "=== SECRETS LENGTH ==="
-          echo "User: ${{ secrets.DOCKER_USERNAME && length(secrets.DOCKER_USERNAME) || 'VACIO' }} chars"
-          echo "Pass: ${{ secrets.DOCKER_PASSWORD && length(secrets.DOCKER_PASSWORD) || 'VACIO' }} chars"
+          echo "DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME && length(secrets.DOCKER_USERNAME) || 'VACIO' }} chars"
+          echo "DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD && length(secrets.DOCKER_PASSWORD) || 'VACIO' }} chars"
 
-      - name: 2. TEST - Conexión a Docker Hub con echo
+      - name: 2. TEST - Conexión a Docker Hub
         run: |
-          echo "Probando login con echo..."
-          # Método 1: Directo (puede fallar si hay espacios)
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          echo "=== INTENTANDO LOGIN ==="
+          USER="${{ secrets.DOCKER_USERNAME }}"
+          PASS="${{ secrets.DOCKER_PASSWORD }}"
+          
+          echo "Usuario: $USER"
+          echo "Longitud del token: ${#PASS}"
+          
+          # Método seguro limpiando espacios
+          CLEAN_PASS=$(echo -n "$PASS" | tr -d '[:space:]')
+          echo "$CLEAN_PASS" | docker login -u "$USER" --password-stdin
 
-      - name: 3. TEST - Conexión con limpieza de token
-        if: failure()  # Solo se ejecuta si el paso 2 falla
-        run: |
-          echo "Probando login limpiando token..."
-          # Método 2: Limpiando espacios y saltos
-          TOKEN="${{ secrets.DOCKER_PASSWORD }}"
-          CLEAN_TOKEN=$(echo -n "$TOKEN" | sed 's/[[:space:]]*$//')
-          echo "Token limpio longitud: ${#CLEAN_TOKEN}"
-          echo "$CLEAN_TOKEN" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: 4. TEST - Build simple
+      - name: 3. TEST - Build auth_services
         if: success()  # Solo si el login funcionó
         run: |
-          echo "Probando build simple..."
-          docker build -t test-image:latest ./auth_services
-          echo "✅ Build exitosooo"
+          echo "=== CONSTRUYENDO AUTH_SERVICES ==="
+          if [ -f "auth_services/Dockerfile" ]; then
+            docker build -t test-auth:latest ./auth_services
+            echo "✅ Build de auth_services exitoso"
+          else
+            echo "❌ ERROR: No se encuentra auth_services/Dockerfile"
+            exit 1
+          fi
+
+      - name: 4. TEST - Build gateway
+        if: success()  # Solo si el paso anterior funcionó
+        run: |
+          echo "=== CONSTRUYENDO GATEWAY ==="
+          if [ -f "gateway/Dockerfile" ]; then
+            docker build -t test-gateway:latest ./gateway
+            echo "✅ Build de gateway exitoso"
+          else
+            echo "❌ ERROR: No se encuentra gateway/Dockerfile"
+            echo "Buscando en gateway/:"
+            ls -la gateway/ || echo "Directorio no existe"
+            exit 1
+          fi
