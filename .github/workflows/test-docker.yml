@@ -42,4 +42,4 @@ jobs:
         run: |
           echo "Probando build simple..."
           docker build -t test-image:latest ./auth_services
-          echo "✅ Build exitoso"
+          echo "✅ Build exitosooo"
