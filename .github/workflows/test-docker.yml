@@ -1,0 +1,45 @@
+name: 🔬 TEST Docker Hub Connection
+
+on:
+  workflow_dispatch:  # Permite ejecutarlo manualmente desde GitHub
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: 1. DEBUG - Mostrar estructura
+        run: |
+          echo "=== ESTRUCTURA ==="
+          pwd
+          ls -la
+          echo "=== auth_services/ ==="
+          ls -la auth_services/
+          echo "=== SECRETS LENGTH ==="
+          echo "User: ${{ secrets.DOCKER_USERNAME && length(secrets.DOCKER_USERNAME) || 'VACIO' }} chars"
+          echo "Pass: ${{ secrets.DOCKER_PASSWORD && length(secrets.DOCKER_PASSWORD) || 'VACIO' }} chars"
+
+      - name: 2. TEST - Conexión a Docker Hub con echo
+        run: |
+          echo "Probando login con echo..."
+          # Método 1: Directo (puede fallar si hay espacios)
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: 3. TEST - Conexión con limpieza de token
+        if: failure()  # Solo se ejecuta si el paso 2 falla
+        run: |
+          echo "Probando login limpiando token..."
+          # Método 2: Limpiando espacios y saltos
+          TOKEN="${{ secrets.DOCKER_PASSWORD }}"
+          CLEAN_TOKEN=$(echo -n "$TOKEN" | sed 's/[[:space:]]*$//')
+          echo "Token limpio longitud: ${#CLEAN_TOKEN}"
+          echo "$CLEAN_TOKEN" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: 4. TEST - Build simple
+        if: success()  # Solo si el login funcionó
+        run: |
+          echo "Probando build simple..."
+          docker build -t test-image:latest ./auth_services
+          echo "✅ Build exitoso"
