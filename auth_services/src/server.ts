@@ -75,12 +75,13 @@ class Server {
 
 
   private initializeRoutes(): void {
-    this.app.use('/', routes);
+    //this.app.use('/', routes);
+    this.app.use('/api/v1/auth', routes);
 
     this.app.get('/', (req, res) => {
       res.status(200).json({
         success: true,
-        message: '🚀 Under Tango Backend is running!',
+        message: '🚀 Node microservices Backend is running!',
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'development',
         version: '1.0.0',

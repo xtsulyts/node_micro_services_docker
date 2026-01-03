@@ -36,7 +36,7 @@ const router = Router();
  * @access Public
  * @body {first_name, last_name, username, email, password, user_type, phone?, photo?}
  */
-router.post('/register', (req, res) => {
+router.post('/api/v1/auth/register', (req, res) => {
   authController.register(req, res);
 });
 
@@ -46,7 +46,7 @@ router.post('/register', (req, res) => {
  * @access Public
  * @body {email, password}
  */
-router.post('/login', (req, res) => {
+router.post('/api/v1/auth/login', (req, res) => {
   authController.login(req, res);
 });
 

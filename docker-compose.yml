@@ -51,6 +51,7 @@ services:
       - "3000:3000"  # El gateway expone el puerto 3000
     depends_on:
       - auth_service  # Espera a que auth_service esté listo
+    command: sh -c "npm run build && node dist/server.js"
 
 volumes:
   mysql_auth_data:
