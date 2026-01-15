@@ -2,15 +2,18 @@ FROM node:18-alpine
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
-COPY tsconfig.json ./
+# Instalar tsx para ES modules
+RUN npm install -g tsx
 
+COPY package*.json ./
 RUN npm ci
 
 COPY . .
 
-# EXPONER EL PUERTO
+# Compilar TypeScript
+RUN npm run build
+
 EXPOSE 3000
 
-# Ejecutar con ts-node (para ES Modules)
-CMD ["npm", "run", "dev"]
+# Ejecutar la versión compilada (JavaScript)
+CMD ["node", "dist/server.js"]
