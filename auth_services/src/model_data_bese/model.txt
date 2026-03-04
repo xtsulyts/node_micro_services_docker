@@ -31,3 +31,34 @@ CREATE TABLE password_reset_tokens (
   INDEX idx_expires_at (expires_at),
   INDEX idx_user_id (user_id)
 );
+
+
+docker exec -i auth_mysql mysql -u xtsulyts -pavmayo852 auth_service_db << 'EOF'
+CREATE TABLE IF NOT EXISTS users (
+  user_id INT PRIMARY KEY AUTO_INCREMENT,
+  first_name VARCHAR(50) NOT NULL,
+  last_name VARCHAR(50) NOT NULL,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  user_type TINYINT NOT NULL,
+  phone VARCHAR(20) DEFAULT NULL,
+  photo VARCHAR(255) DEFAULT NULL,
+  active BOOLEAN DEFAULT TRUE,
+  created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  token_id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  token VARCHAR(255) NOT NULL UNIQUE,
+  expires_at DATETIME NOT NULL,
+  used BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  INDEX idx_token (token),
+  INDEX idx_expires_at (expires_at),
+  INDEX idx_user_id (user_id)
+);
+EOF

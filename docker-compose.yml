@@ -20,7 +20,7 @@ services:
       interval: 5s
 
   auth_service:
-    image: xtsulyts/node_micro_services_auth_services:latest
+    build: ./auth_services
     container_name: auth_service
     environment:
       NODE_ENV: development
@@ -41,12 +41,12 @@ services:
         condition: service_healthy
 
   gateway:
-    image: xtsulyts/node_micro_services_gateway:latest
+    build: ./gateway
     container_name: gateway
     environment:
       NODE_ENV: development
       PORT: 3000
-      USER_SERVICE_URL: http://auth_service:3001
+      USER_SERVICE_URL: http://auth_service:3001/api/v1/auth/api/v1/auth
     ports:
       - "3000:3000"
     depends_on:

@@ -76,7 +76,7 @@ class Server {
 
   private initializeRoutes(): void {
     //this.app.use('/', routes);
-    this.app.use('/api/v1/auth', routes);
+    this.app.use('/', routes);
 
     this.app.get('/', (req, res) => {
       res.status(200).json({

@@ -30,7 +30,7 @@ router.get(`${API_PREFIX}/health`, (req, res) => {
 router.get(API_PREFIX, (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Welcome to Under Tango API',
+    message: 'Welcome API node',
     version: '1.0.0',
     endpoints: {
       auth: `${API_PREFIX}/v1/auth`,
