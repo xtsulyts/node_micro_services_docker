@@ -155,7 +155,7 @@ class Server {
    */
   private printStartupMessage(): void {
     console.log('\n' + '✨'.repeat(50));
-    console.log('🚀 Under Tango Backend Started Successfully!');
+    console.log('🚀 Gateway microservices Successfully!');
     console.log('✨'.repeat(50));
     console.log(`📍 Port: ${this.port}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
