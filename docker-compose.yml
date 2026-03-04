@@ -20,7 +20,7 @@ services:
       interval: 5s
 
   auth_service:
-    build: ./auth_services
+    image: xtsulyts/node_micro_services_auth_services:latest
     container_name: auth_service
     environment:
       NODE_ENV: development
@@ -38,20 +38,19 @@ services:
       - "3001:3001"
     depends_on:
       mysql_db:
-        condition: service_healthy  # Espera a que la DB esté lista
+        condition: service_healthy
 
   gateway:
-    build: ./gateway
+    image: xtsulyts/node_micro_services_gateway:latest
     container_name: gateway
     environment:
       NODE_ENV: development
       PORT: 3000
-      USER_SERVICE_URL: http://auth_service:3001  # ¡CRÍTICO! Nombre del servicio
+      USER_SERVICE_URL: http://auth_service:3001
     ports:
-      - "3000:3000"  # El gateway expone el puerto 3000
+      - "3000:3000"
     depends_on:
-      - auth_service  # Espera a que auth_service esté listo
-    command: sh -c "npm run build && node dist/server.js"
+      - auth_service
 
 volumes:
   mysql_auth_data:
