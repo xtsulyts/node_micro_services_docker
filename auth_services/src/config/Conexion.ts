@@ -12,6 +12,7 @@ interface DatabaseConfig {
   user: string;
   database: string;
   password: string;
+  port: number;
   waitForConnections?: boolean;
   connectionLimit?: number;
   queueLimit?: number;
@@ -26,7 +27,7 @@ class DatabaseConnection {
   private config: DatabaseConfig;
 
   constructor() { 
-    const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_NAME', "DB_PASSWORD"];
+    const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_NAME', "DB_PASSWORD", "DB_PORT"];
     const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
     
     if (missingVars.length > 0) {
@@ -34,6 +35,7 @@ class DatabaseConnection {
     }
 
     this.config = {
+      port: Number(process.env.DB_PORT) || 3306,
       host: process.env.DB_HOST!,
       user: process.env.DB_USER!,
       database: process.env.DB_NAME!,
