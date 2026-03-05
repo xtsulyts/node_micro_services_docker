@@ -34,10 +34,10 @@ class Server {
    * @returns Puerto configurado
    */
   private getPort(): number {
-    const port = parseInt(process.env.PORT || '3000');
+    const port = parseInt(process.env.PORT || '3001');
     if (isNaN(port) || port < 1 || port > 65535) {
       console.warn('⚠️  Puerto inválido, usando puerto por defecto 3000');
-      return 3000;
+      return 3001;
     }
     return port;
   }

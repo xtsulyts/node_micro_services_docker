@@ -10,8 +10,9 @@ dotenv.config();
 interface DatabaseConfig {
   host: string;
   user: string;
+  port: number; 
   database: string;
-  //password: string;
+  password: string;
   waitForConnections?: boolean;
   connectionLimit?: number;
   queueLimit?: number;
@@ -27,7 +28,7 @@ class DatabaseConnection {
 
   constructor() {
     // Validar variables de entorno esenciales primero
-    const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_NAME'];
+    const requiredEnvVars = ['DB_HOST', 'DB_USER', 'DB_NAME', 'DB_HOST'];
     const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
     
     if (missingVars.length > 0) {
@@ -37,15 +38,23 @@ class DatabaseConnection {
     this.config = {
       host: process.env.DB_HOST!,
       user: process.env.DB_USER!,
+      port: Number(process.env.DB_PORT) || 3306,
       database: process.env.DB_NAME!,
-      //password: process.env.DB_PASSWORD!,
+      password: process.env.DB_PASSWORD!,
       waitForConnections: true,
       connectionLimit: parseInt(process.env.DB_POOL_LIMIT || '20'), 
       queueLimit: 0,
       //acquireTimeout: 60000, // 60 segundos timeout
       //timeout: 60000, // 60 segundos para queries largos
       //reconnect: true
+      
     };
+    console.log('Conectando a:', {
+  host: this.config.host,
+  port: this.config.port,
+  user: this.config.user,
+  database: this.config.database,
+});
 
     this.pool = mysql.createPool(this.config);
     this.testConnection();
